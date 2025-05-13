@@ -1,4 +1,4 @@
-namespace Challenge
+namespace MyAppDemo
 {
     public class WeatherForecast
     {
