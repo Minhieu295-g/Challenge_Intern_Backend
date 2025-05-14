@@ -1,4 +1,5 @@
 ﻿using Challenge2.DTOs.Requests;
+using Challenge2.Exceptions;
 using Challenge2.Repositories;
 using Challenge2.Repositories.Impl;
 using Challenge2.Services;
@@ -18,26 +19,48 @@ namespace Challenge2.Controllers
         }
 
         [HttpPost]
-        public IActionResult CreateUser(UserRequest request)
+        public IActionResult CreateUser([FromBody] UserRequest request)
         {
+            if (!ModelState.IsValid)
+            {
+                var messages = ModelState
+                               .SelectMany(x => x.Value.Errors)  
+                               .Select(e => e.ErrorMessage)     
+                               .ToArray().GetValue(0);
+
+                return BadRequest(new
+                {
+                    status = HttpStatusCode.BadRequest,
+                    success = false,
+                    message = "Validation failed",
+                    errors = messages,
+                });
+            }
             try
             {
+                var result = _userService.createUser(request);
                 return Ok(new
                 {
                     status = HttpStatusCode.OK,
                     success = true,
-                    message = "Created user successfulyy!",
-                    data = _userService.createUser(request)
+                    message = "Created user successfully!",
+                    data = result
                 });
             }
             catch (Exception ex)
             {
-                return BadRequest(ex);
+                return BadRequest(new
+                {
+                    status = HttpStatusCode.BadRequest,
+                    success = false,
+                    message = "Error creating user",
+                    error = ex.Message
+                });
             }
-
         }
-        [HttpDelete("{id}")]
-        public IActionResult DeleteUserById(int id)
+
+        [HttpDelete("{id:int}")]
+        public IActionResult DeleteUserById([FromRoute] int id)
         {
             try
             {
@@ -49,9 +72,15 @@ namespace Challenge2.Controllers
                     message = "Deleted user successfulyy!",
                 });
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                return BadRequest(e);
+                return BadRequest(new
+                {
+                    status = HttpStatusCode.BadRequest,
+                    success = false,
+                    message = "Error creating user",
+                    error = ex.Message
+                });
             }
         }
 
@@ -69,48 +98,86 @@ namespace Challenge2.Controllers
         [HttpGet("{id}")]
         public IActionResult GetUserById(int id)
         {
-            var user = _userService.getUser(id);
+            try
+            {
+                var user = _userService.getUser(id);
 
-            if(user == null)
+                return Ok(new
+                {
+                    status = HttpStatusCode.OK,
+                    success = true,
+                    message = "Get user successfully",
+                    data = user
+                });
+            }
+            catch (NotFoundException ex)
             {
                 return NotFound(new
                 {
                     status = HttpStatusCode.NotFound,
                     success = false,
-                    message = "User not found!"
+                    message = ex.Message
                 });
             }
-
-            return Ok(new
+            catch (Exception ex)
             {
-                status = HttpStatusCode.OK,
-                success = true,
-                message = "Get user successfully",
-                data = user
-            });
+                return StatusCode(500, new
+                {
+                    status = HttpStatusCode.InternalServerError,
+                    success = false,
+                    message = "Unexpected error occurred",
+                    error = ex.Message
+                });
+            }
         }
+
 
 
         [HttpPut("{id}")]
         public IActionResult updateUser(int id, UserRequest userRequest)
         {
+            if (!ModelState.IsValid)
+            {
+                var messages = ModelState
+                               .SelectMany(x => x.Value.Errors)
+                               .Select(e => e.ErrorMessage)
+                               .ToArray().GetValue(0);
+
+                return BadRequest(new
+                {
+                    status = HttpStatusCode.BadRequest,
+                    success = false,
+                    message = "Validation failed",
+                    errors = messages,
+                });
+            }
             try
             {
                 _userService.updateUser(id, userRequest);
                 return Ok(new
                 {
-                    status = HttpStatusCode.NoContent,
+                    status = HttpStatusCode.OK,
                     success = true,
                     message = "Update user successfully",
                 });
             }
-            catch (Exception e)
+            catch (NotFoundException ex)
             {
                 return NotFound(new
                 {
                     status = HttpStatusCode.NotFound,
                     success = false,
-                    message = "User not found"
+                    message = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    status = HttpStatusCode.InternalServerError,
+                    success = false,
+                    message = "Unexpected error occurred",
+                    error = ex.Message
                 });
             }
         }

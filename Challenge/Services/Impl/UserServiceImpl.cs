@@ -1,6 +1,7 @@
 ﻿using Challenge2.Data;
 using Challenge2.DTOs.Requests;
 using Challenge2.DTOs.Responses;
+using Challenge2.Exceptions;
 using Challenge2.Repositories;
 
 namespace Challenge2.Services.Impl
@@ -34,7 +35,7 @@ namespace Challenge2.Services.Impl
         public UserResponse getUser(int id)
         {
             var user = _userRepository.getUser(id);
-            if (user == null) return null;
+            if (user == null) throw new NotFoundException($"User with id = {id} not found");
             return new UserResponse
             {
                 Id = user.Id,
@@ -60,7 +61,7 @@ namespace Challenge2.Services.Impl
         public void updateUser(int id, UserRequest request)
         {
             var user = _userRepository.getUser(id);
-            if (user == null) throw new Exception("User not found");
+            if (user == null) throw new NotFoundException($"User with id = {id} not found");
 
             user.Username = request.Username;
             user.Password = request.Password;
