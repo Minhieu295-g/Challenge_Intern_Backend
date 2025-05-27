@@ -1,44 +1,20 @@
-using Challenge2.Data;
-using Challenge2.Repositories.Impl;
-using Challenge2.Repositories;
-using Challenge2.Services.Impl;
-using Challenge2.Services;
+﻿using System.Reflection;
+using Application;
+using DotNetTraining.AutoMappers;
+using DotNetTraining.Repositories;
+using DotNetTraining.Services;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-builder.Services
-    .AddControllers()
-    .ConfigureApiBehaviorOptions(opts =>
-        opts.SuppressModelStateInvalidFilter = true);// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-builder.Services.AddScoped<IUserRepository, UserRepositoryImpl>();
-builder.Services.AddScoped<IUserService, UserServiceImpl>();
-
-
-builder.Services.AddDbContext<MyDbContext>(optional =>
+builder.Services.Configure<FormOptions>(options =>
 {
-    optional.UseSqlServer(builder.Configuration.GetConnectionString("MyDb"));
-}
-);
+    options.MultipartBodyLengthLimit = 1L * 1024 * 1024 * 1024; // Set limit to 1GB
+});
+// đăng ký AutoMapper
+builder.Services.AddAutoMapper(typeof(Program));
 
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
+var xmlPath = Path.Combine(AppContext.BaseDirectory, $"{Assembly.GetExecutingAssembly().GetName().Name}.xml");
+var application = new Startup(builder, xmlPath, Assembly.GetExecutingAssembly());
+application.Start();
